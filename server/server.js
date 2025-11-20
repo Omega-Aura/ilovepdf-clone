@@ -31,7 +31,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
-// Helper to run PowerShell script
+// Helper to run PowerShell script (Windows)
 const convertWithPowerShell = (inputPath, outputPath) => {
   return new Promise((resolve, reject) => {
     const psScript = path.join(__dirname, 'convert.ps1');
@@ -59,6 +59,17 @@ const convertWithPowerShell = (inputPath, outputPath) => {
   });
 };
 
+// Helper to use LibreOffice (Linux/Docker)
+const libre = require('libreoffice-convert');
+const { promisify } = require('util');
+const convertAsync = promisify(libre.convert);
+
+const convertWithLibreOffice = async (inputPath, outputPath) => {
+  const fileBuffer = await fs.readFile(inputPath);
+  const pdfBuffer = await convertAsync(fileBuffer, '.pdf', undefined);
+  await fs.writeFile(outputPath, pdfBuffer);
+};
+
 // Conversion Endpoint
 app.post('/api/convert', upload.array('files'), async (req, res) => {
   try {
@@ -75,8 +86,14 @@ app.post('/api/convert', upload.array('files'), async (req, res) => {
       const outputFilename = path.parse(file.originalname).name + '.pdf';
       const absoluteOutputPath = path.join(OUTPUT_DIR, outputFilename);
 
-      // Convert using PowerShell
-      await convertWithPowerShell(absoluteInputPath, absoluteOutputPath);
+      // Convert
+      if (process.platform === 'win32') {
+        // Windows: Use PowerShell (Native PowerPoint)
+        await convertWithPowerShell(absoluteInputPath, absoluteOutputPath);
+      } else {
+        // Linux/Mac/Docker: Use LibreOffice
+        await convertWithLibreOffice(inputPath, absoluteOutputPath);
+      }
 
       // Cleanup input
       await fs.remove(inputPath);
