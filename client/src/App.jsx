@@ -42,7 +42,8 @@ function App() {
     });
 
     try {
-      const response = await axios.post('http://localhost:5000/api/convert', formData, {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const response = await axios.post(`${apiUrl}/api/convert`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
@@ -165,17 +166,20 @@ function App() {
                       Conversion Complete!
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full">
-                      {convertedFiles.map((file, idx) => (
-                        <a
-                          key={idx}
-                          href={`http://localhost:5000${file.downloadUrl}`}
-                          className="flex items-center justify-center gap-2 bg-slate-900 text-white px-6 py-3 rounded-xl font-semibold hover:bg-slate-800 transition-colors shadow-md"
-                          download
-                        >
-                          <Download className="h-5 w-5" />
-                          Download {file.originalName.replace(/\.[^/.]+$/, "")}.pdf
-                        </a>
-                      ))}
+                      {convertedFiles.map((file, idx) => {
+                        const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+                        return (
+                          <a
+                            key={idx}
+                            href={`${apiUrl}${file.downloadUrl}`}
+                            className="flex items-center justify-center gap-2 bg-slate-900 text-white px-6 py-3 rounded-xl font-semibold hover:bg-slate-800 transition-colors shadow-md"
+                            download
+                          >
+                            <Download className="h-5 w-5" />
+                            Download {file.originalName.replace(/\.[^/.]+$/, "")}.pdf
+                          </a>
+                        )
+                      })}
                     </div>
                     <button
                       onClick={() => { setFiles([]); setConvertedFiles([]); }}
